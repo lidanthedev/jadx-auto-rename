@@ -8,8 +8,8 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
 
 	// auto update dependencies with 'useLatestVersions' task
-	id("se.patrikerdes.use-latest-versions") version "0.2.18"
-	id("com.github.ben-manes.versions") version "0.52.0"
+	id("se.patrikerdes.use-latest-versions") version "0.2.19"
+	id("com.github.ben-manes.versions") version "0.53.0"
 }
 
 dependencies {

@@ -1,4 +1,4 @@
-package jadx.plugins.example;
+package jadx.plugins.example.passes;
 
 import jadx.api.data.CommentStyle;
 import jadx.api.plugins.pass.JadxPassInfo;

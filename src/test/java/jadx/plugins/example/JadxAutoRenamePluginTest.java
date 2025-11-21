@@ -11,7 +11,7 @@ import java.net.URL;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class JadxExamplePluginTest {
+class JadxAutoRenamePluginTest {
 
 	@Test
 	public void integrationTest() throws Exception {
