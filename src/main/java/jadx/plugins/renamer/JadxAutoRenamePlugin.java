@@ -24,7 +24,7 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 	@Override
 	public void init(JadxPluginContext context) {
 		context.registerOptions(options);
-		if (options.isEnable()) {
+		if (options.isSourceFileRename()) {
 			context.addPass(new SourceFileRenamePass());
 		}
 	}

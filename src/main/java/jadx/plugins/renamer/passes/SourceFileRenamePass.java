@@ -42,6 +42,12 @@ public class SourceFileRenamePass implements JadxPreparePass {
 			return;
 		}
 		String fileName = sourceFile.getFileName();
+		if (fileName.startsWith("SourceFile")) {
+			return;
+		}
+		if (fileName.startsWith("r8") || fileName.startsWith("R8")) {
+			return;
+		}
 		String origName = fileName.split("\\.")[0]; // remove extension
 
 		cls.rename(origName);
