@@ -1,1 +1,1 @@
-jadx.plugins.example.JadxAutoRenamePlugin
+jadx.plugins.renamer.JadxAutoRenamePlugin

@@ -1,4 +1,4 @@
-package jadx.plugins.example;
+package jadx.plugins.renamer;
 
 import jadx.api.JadxArgs;
 import jadx.api.JadxDecompiler;

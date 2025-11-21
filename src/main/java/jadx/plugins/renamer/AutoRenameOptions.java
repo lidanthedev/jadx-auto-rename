@@ -1,4 +1,4 @@
-package jadx.plugins.example;
+package jadx.plugins.renamer;
 
 import jadx.api.plugins.options.impl.BasePluginOptionsBuilder;
 

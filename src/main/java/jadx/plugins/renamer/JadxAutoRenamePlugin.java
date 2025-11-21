@@ -1,11 +1,10 @@
-package jadx.plugins.example;
+package jadx.plugins.renamer;
 
 import jadx.api.plugins.JadxPlugin;
 import jadx.api.plugins.JadxPluginContext;
 import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.JadxPluginInfoBuilder;
-import jadx.plugins.example.passes.AddCommentPass;
-import jadx.plugins.example.passes.SourceFileRenamePass;
+import jadx.plugins.renamer.passes.SourceFileRenamePass;
 
 public class JadxAutoRenamePlugin implements JadxPlugin {
 	public static final String PLUGIN_ID = "jadx-auto-rename";
