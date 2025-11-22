@@ -33,7 +33,7 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 			context.addPass(new ToStringRenamePass(options));
 		}
 		if (options.isTagRename()){
-			context.addPass(new TagRenamePass(options));
+			context.addPass(new TagRenamePass());
 		}
 	}
 }
