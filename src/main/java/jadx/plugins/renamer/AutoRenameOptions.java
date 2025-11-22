@@ -6,6 +6,7 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	private boolean sourceFileRename;
 	private boolean toStringRename;
+	private boolean tagRename;
 
 	@Override
 	public void registerOptions() {
@@ -17,6 +18,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable Auto Rename by toString() method")
 				.defaultValue(true)
 				.setter(v -> toStringRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".tag_rename.enable")
+				.description("Enable Auto Rename by TAG field")
+				.defaultValue(true)
+				.setter(v -> tagRename = v);
 	}
 
 	public boolean isSourceFileRename() {
@@ -25,5 +30,9 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isToStringRename() {
 		return toStringRename;
+	}
+
+	public boolean isTagRename() {
+		return tagRename;
 	}
 }

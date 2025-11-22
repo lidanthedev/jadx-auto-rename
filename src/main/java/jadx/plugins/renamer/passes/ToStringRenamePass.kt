@@ -18,7 +18,7 @@ import jadx.core.dex.nodes.RootNode
 import jadx.plugins.renamer.AutoRenameOptions
 import java.util.logging.Logger
 
-class ToStringRename(
+class ToStringRenamePass(
 	private val options: AutoRenameOptions,
 ) : JadxDecompilePass {
 	val logger = Logger.getLogger("ToStringRename")
