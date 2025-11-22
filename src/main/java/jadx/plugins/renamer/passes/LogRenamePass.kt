@@ -37,8 +37,9 @@ class LogRenamePass : JadxDecompilePass {
         return true
     }
 
+
     override fun visit(mth: MethodNode) {
-		if (mth.parentClass != null && mth.parentClass.contains(AFlag.DONT_RENAME)) return
+        if (mth.parentClass != null && mth.parentClass.contains(AFlag.DONT_RENAME)) return
         if (mth.contains(AFlag.DONT_RENAME)) return
         if (mth.isNoCode) return
 
@@ -63,6 +64,13 @@ class LogRenamePass : JadxDecompilePass {
                             if (tag.isNotEmpty() && NameMapper.isValidIdentifier(tag)) {
                                 val parentCls = mth.parentClass
                                 if (parentCls.contains(AFlag.DONT_RENAME)) continue
+                                // skip if class already has alias (manually renamed)
+                                try {
+                                    val clsInfo = parentCls.getClassInfo()
+                                    if (clsInfo != null && clsInfo.hasAlias()) continue
+                                } catch (_: Exception) {
+                                    // ignore
+                                }
                                 val currentName = parentCls.name
                                 // avoid renaming if class already matches or too short
                                 if (currentName == tag) continue

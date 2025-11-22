@@ -1,28 +1,22 @@
 package jadx.plugins.renamer.passes;
 
-import jadx.api.data.CommentStyle;
 import jadx.api.plugins.input.data.attributes.JadxAttrType;
 import jadx.api.plugins.input.data.attributes.types.SourceFileAttr;
 import jadx.api.plugins.pass.JadxPassInfo;
 import jadx.api.plugins.pass.impl.OrderedJadxPassInfo;
-import jadx.api.plugins.pass.types.JadxDecompilePass;
 import jadx.api.plugins.pass.types.JadxPreparePass;
-import jadx.core.Jadx;
 import jadx.core.dex.attributes.AFlag;
 import jadx.core.dex.attributes.nodes.RenameReasonAttr;
 import jadx.core.dex.nodes.ClassNode;
-import jadx.core.dex.nodes.MethodNode;
 import jadx.core.dex.nodes.RootNode;
 
 public class SourceFileRenamePass implements JadxPreparePass {
 
-	private String comment;
-
 	@Override
 	public JadxPassInfo getInfo() {
 		return new OrderedJadxPassInfo(
-				"SourceFileRename",
-				"Rename files according to SourceFile attribute")
+					"SourceFileRename",
+					"Rename files according to SourceFile attribute")
 				.before("RenameVisitor");
 	}
 
@@ -36,6 +30,15 @@ public class SourceFileRenamePass implements JadxPreparePass {
 	private void renameBySourceMetadata(ClassNode cls) {
 		if (cls.contains(AFlag.DONT_RENAME)) {
 			return;
+		}
+
+		// skip if class already manually renamed by user
+		try {
+			if (cls.getClassInfo() != null && cls.getClassInfo().hasAlias()) {
+				return;
+			}
+		} catch (Exception ignored) {
+			// ignore
 		}
 
 		SourceFileAttr sourceFile = cls.get(JadxAttrType.SOURCE_FILE);

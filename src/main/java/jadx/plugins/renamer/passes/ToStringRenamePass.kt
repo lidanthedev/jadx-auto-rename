@@ -18,9 +18,8 @@ import jadx.core.dex.nodes.RootNode
 import jadx.plugins.renamer.AutoRenameOptions
 import java.util.logging.Logger
 
-class ToStringRenamePass(
-	private val options: AutoRenameOptions,
-) : JadxDecompilePass {
+@Suppress("UNUSED_PARAMETER")
+class ToStringRenamePass() : JadxDecompilePass {
 	val logger = Logger.getLogger("ToStringRename")
 
 	override fun init(root: RootNode) {
@@ -50,7 +49,7 @@ class ToStringRenamePass(
 				if (arg.isInsnWrap) {
 					val wrapInsn = (arg as InsnWrapArg).wrapInsn
 					if (wrapInsn.type == InsnType.STR_CONCAT) {
-						logger.info { "Renaming using 'toString' in class: ${mth.parentClass}" }
+						logger.info("Renaming using 'toString' in class: ${mth.parentClass}")
 						processArgs(mth, wrapInsn)
 					}
 				}
@@ -73,12 +72,23 @@ class ToStringRenamePass(
 					if (i == 0) {
 						// class and first field name
 						val parts = str.split(clsSepRgx)
+						if (parts.size < 2) {
+							return false
+						}
 						val clsName = parts[0]
 						if (NameMapper.isValidIdentifier(clsName)) {
-							mth.parentClass.run {
-								logger.info { "rename class '$name' to '$clsName'" }
-								rename(clsName)
-								RenameReasonAttr.forNode(this).append("from toString()")
+							// skip if class already manually renamed
+							try {
+								val info = mth.parentClass.getClassInfo()
+								if (info != null && info.hasAlias()) {
+									// don't override user alias
+								} else {
+									logger.info("rename class '${mth.parentClass.name}' to '$clsName'")
+									mth.parentClass.rename(clsName)
+									RenameReasonAttr.forNode(mth.parentClass).append("from toString()")
+								}
+							} catch (e: Exception) {
+								// ignore
 							}
 						}
 						str = parts[1]
@@ -88,13 +98,26 @@ class ToStringRenamePass(
 					if (insn.type != InsnType.IGET) {
 						return false
 					}
-					val iget = insn as IndexInsnNode
+					if (insn !is IndexInsnNode) {
+						return false
+					}
+					val iget = insn
 					val fldInfo = iget.index as FieldInfo
 					val fld = mth.parentClass.searchField(fldInfo)
 					if (fld != null && NameMapper.isValidIdentifier(fldName)) {
-						logger.info { "rename field '${fld.name}' to '$fldName'" }
-						fld.rename(fldName)
-						RenameReasonAttr.forNode(fld).append("from toString()")
+						// skip if field already manually renamed
+						try {
+							val finfo = fld.getFieldInfo()
+							if (finfo != null && finfo.hasAlias()) {
+								// don't override
+							} else {
+								logger.info("rename field '${fld.name}' to '$fldName'")
+								fld.rename(fldName)
+								RenameReasonAttr.forNode(fld).append("from toString()")
+							}
+						} catch (_: Exception) {
+							// ignore
+						}
 					}
 				}
 			}

@@ -31,7 +31,7 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 			context.addPass(new SourceFileRenamePass());
 		}
 		if (options.isToStringRename()){
-			context.addPass(new ToStringRenamePass(options));
+			context.addPass(new ToStringRenamePass());
 		}
 		if (options.isTagRename()){
 			context.addPass(new TagRenamePass());

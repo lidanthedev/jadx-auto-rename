@@ -45,11 +45,20 @@ class TagRenamePass : JadxDecompilePass {
         if (cls.contains(AFlag.DONT_RENAME)) {
             return
         }
+        // skip classes already manually renamed by user
+        try {
+            val classInfo = cls.getClassInfo()
+            if (classInfo != null && classInfo.hasAlias()) {
+                return
+            }
+        } catch (_: Exception) {
+            // ignore
+        }
         for (fld in cls.fields) {
             try {
                 processField(cls, fld)
-            } catch (e: Exception) {
-                logger.severe("Error processing field ${fld.getName()} in class ${cls}: $e")
+            } catch (_: Exception) {
+                logger.severe("Error processing field ${fld.getName()} in class ${cls}")
             }
         }
     }
@@ -57,6 +66,15 @@ class TagRenamePass : JadxDecompilePass {
     private fun processField(cls: ClassNode, fld: FieldNode) {
         if (fld.contains(AFlag.DONT_RENAME)) {
             return
+        }
+        // skip fields already manually renamed by user
+        try {
+            val fInfo = fld.getFieldInfo()
+            if (fInfo != null && fInfo.hasAlias()) {
+                return
+            }
+        } catch (_: Exception) {
+            // ignore
         }
         val acc = fld.accessFlags
         if (!acc.isPrivate || !acc.isFinal) {
@@ -78,8 +96,8 @@ class TagRenamePass : JadxDecompilePass {
 
         // 2) if not found, try field init instruction attribute (moved from <init> or <clinit>)
         if (strValue == null) {
-            val initAttr = fld.get(AType.FIELD_INIT_INSN) as? FieldInitInsnAttr
-            if (initAttr != null) {
+            val initAttr = fld.get(AType.FIELD_INIT_INSN)
+            if (initAttr is FieldInitInsnAttr) {
                 val insn = initAttr.getInsn()
                 val v = InsnUtils.getConstValueByInsn(cls.root(), insn)
                 if (v is String) {
@@ -106,11 +124,20 @@ class TagRenamePass : JadxDecompilePass {
         logger.info("Renaming field '${fld.name}' in class $cls to TAG (value='$strValue')")
         fld.rename("TAG")
         RenameReasonAttr.forNode(fld).append("from TagRenamePass")
-		if (cls.name.length > 3 && cls.name.endsWith(strValue)) {
-			// avoid redundant class rename
-			return
-		}
-		cls.rename(strValue)
-		RenameReasonAttr.forNode(cls).append("from TagRenamePass")
+        if (cls.name.length > 3 && cls.name.endsWith(strValue)) {
+            // avoid redundant class rename
+            return
+        }
+        // skip class rename if class already has alias
+        try {
+            val classInfo = cls.getClassInfo()
+            if (classInfo != null && classInfo.hasAlias()) {
+                return
+            }
+        } catch (_: Exception) {
+            // ignore
+        }
+        cls.rename(strValue)
+        RenameReasonAttr.forNode(cls).append("from TagRenamePass")
     }
 }
