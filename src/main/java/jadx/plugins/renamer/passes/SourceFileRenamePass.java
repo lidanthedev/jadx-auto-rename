@@ -9,6 +9,7 @@ import jadx.api.plugins.pass.types.JadxDecompilePass;
 import jadx.api.plugins.pass.types.JadxPreparePass;
 import jadx.core.Jadx;
 import jadx.core.dex.attributes.AFlag;
+import jadx.core.dex.attributes.nodes.RenameReasonAttr;
 import jadx.core.dex.nodes.ClassNode;
 import jadx.core.dex.nodes.MethodNode;
 import jadx.core.dex.nodes.RootNode;
@@ -42,14 +43,12 @@ public class SourceFileRenamePass implements JadxPreparePass {
 			return;
 		}
 		String fileName = sourceFile.getFileName();
-		if (fileName.startsWith("SourceFile")) {
-			return;
-		}
-		if (fileName.startsWith("r8") || fileName.startsWith("R8")) {
+		if (fileName.isEmpty() || fileName.startsWith("SourceFile") || fileName.startsWith("r8") || fileName.startsWith("R8")) {
 			return;
 		}
 		String origName = fileName.split("\\.")[0]; // remove extension
 
 		cls.rename(origName);
+		RenameReasonAttr.forNode(cls).append("from SourceFile attribute");
 	}
 }

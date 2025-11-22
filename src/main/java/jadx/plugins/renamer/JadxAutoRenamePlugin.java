@@ -5,6 +5,7 @@ import jadx.api.plugins.JadxPluginContext;
 import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.JadxPluginInfoBuilder;
 import jadx.plugins.renamer.passes.SourceFileRenamePass;
+import jadx.plugins.renamer.passes.ToStringRename;
 
 public class JadxAutoRenamePlugin implements JadxPlugin {
 	public static final String PLUGIN_ID = "jadx-auto-rename";
@@ -26,6 +27,9 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 		context.registerOptions(options);
 		if (options.isSourceFileRename()) {
 			context.addPass(new SourceFileRenamePass());
+		}
+		if (options.isToStringRename()){
+			context.addPass(new ToStringRename(options));
 		}
 	}
 }
