@@ -16,6 +16,7 @@ import jadx.core.dex.nodes.InsnNode
 import jadx.core.dex.nodes.MethodNode
 import jadx.core.dex.nodes.RootNode
 import jadx.plugins.renamer.util.RenameUtils
+import java.util.logging.Level
 import java.util.logging.Logger
 
 class ToStringRenamePass() : JadxDecompilePass {
@@ -37,6 +38,11 @@ class ToStringRenamePass() : JadxDecompilePass {
 	}
 
 	override fun visit(mth: MethodNode) {
+		// bind parent class once to avoid repeated dereferences and NPEs
+		val parentCls = mth.parentClass ?: return
+		if (parentCls.contains(AFlag.DONT_RENAME)) {
+			return
+		}
 		if (mth.contains(AFlag.DONT_RENAME)) {
 			return
 		}
@@ -48,8 +54,8 @@ class ToStringRenamePass() : JadxDecompilePass {
 				if (arg.isInsnWrap) {
 					val wrapInsn = (arg as InsnWrapArg).wrapInsn
 					if (wrapInsn.type == InsnType.STR_CONCAT) {
-						logger.info("Renaming using 'toString' in class: ${mth.parentClass}")
-						processArgs(mth, wrapInsn)
+						logger.info("Renaming using 'toString' in class: $parentCls")
+						processArgs(parentCls, wrapInsn)
 					}
 				}
 			}
@@ -58,7 +64,7 @@ class ToStringRenamePass() : JadxDecompilePass {
 
 	val clsSepRgx = Regex("[ ({:]")
 
-	private fun processArgs(mth: MethodNode, wrapInsn: InsnNode): Boolean {
+	private fun processArgs(parentCls: ClassNode, wrapInsn: InsnNode): Boolean {
 		try {
 			var fldName: String? = null
 			for ((i, arg) in wrapInsn.arguments.withIndex()) {
@@ -78,16 +84,21 @@ class ToStringRenamePass() : JadxDecompilePass {
 						if (NameMapper.isValidIdentifier(clsName)) {
 							// skip if class already manually renamed
 							try {
-								val info = mth.parentClass.getClassInfo()
-								if (info != null && info.hasAlias() && RenameUtils.isClassUserRenamed(mth.parentClass)) {
+								val info = parentCls.getClassInfo()
+								if (info != null && info.hasAlias() && RenameUtils.isClassUserRenamed(parentCls)) {
 									// don't override
 								} else {
-									logger.info("rename class '${mth.parentClass.name}' to '$clsName'")
-									mth.parentClass.rename(clsName)
-									RenameReasonAttr.forNode(mth.parentClass).append("from toString()")
+									logger.info("rename class '${parentCls.name}' to '$clsName'")
+									parentCls.rename(clsName)
+									RenameReasonAttr.forNode(parentCls).append("from toString()")
 								}
-							} catch (_: Exception) {
-								// ignore
+							} catch (e: Exception) {
+								// Log exception and continue (do not rethrow) so errors are not silently suppressed
+								logger.log(
+									Level.SEVERE,
+									"Error during class rename check in ToStringRenamePass for class ${parentCls.name}",
+									e
+								)
 							}
 						}
 						str = parts[1]
@@ -102,7 +113,7 @@ class ToStringRenamePass() : JadxDecompilePass {
 					}
 					val iget = insn
 					val fldInfo = iget.index as? FieldInfo ?: return false
-					val fld = mth.parentClass.searchField(fldInfo)
+					val fld = parentCls.searchField(fldInfo)
 					if (fld != null && fldName != null && NameMapper.isValidIdentifier(fldName)) {
 						// skip if field already manually renamed
 						try {
@@ -114,8 +125,13 @@ class ToStringRenamePass() : JadxDecompilePass {
 								fld.rename(fldName)
 								RenameReasonAttr.forNode(fld).append("from toString()")
 							}
-						} catch (_: Exception) {
-							// ignore
+						} catch (e: Exception) {
+							// Log exception and continue (do not rethrow) so errors are not silently suppressed
+							logger.log(
+								Level.SEVERE,
+								"Error during field rename in ToStringRenamePass for field ${fld.name} in class ${parentCls.name}",
+								e
+							)
 						}
 					}
 				}
