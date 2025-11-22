@@ -6,7 +6,7 @@ plugins {
     `java-library`
 
     id("com.github.johnrengelman.shadow") version "8.1.1"
-	id("org.jetbrains.kotlin.jvm")
+	id("org.jetbrains.kotlin.jvm") version "2.2.0"
 
 	// auto update dependencies with 'useLatestVersions' task
 	id("se.patrikerdes.use-latest-versions") version "0.2.19"
