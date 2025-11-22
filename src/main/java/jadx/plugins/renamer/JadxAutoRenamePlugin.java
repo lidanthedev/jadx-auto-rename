@@ -4,6 +4,7 @@ import jadx.api.plugins.JadxPlugin;
 import jadx.api.plugins.JadxPluginContext;
 import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.JadxPluginInfoBuilder;
+import jadx.plugins.renamer.passes.LogRenamePass;
 import jadx.plugins.renamer.passes.SourceFileRenamePass;
 import jadx.plugins.renamer.passes.TagRenamePass;
 import jadx.plugins.renamer.passes.ToStringRenamePass;
@@ -34,6 +35,9 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 		}
 		if (options.isTagRename()){
 			context.addPass(new TagRenamePass());
+		}
+		if (options.isLogRename()) {
+			context.addPass(new LogRenamePass());
 		}
 	}
 }
