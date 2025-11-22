@@ -18,7 +18,6 @@ import jadx.core.dex.nodes.RootNode
 import jadx.plugins.renamer.AutoRenameOptions
 import java.util.logging.Logger
 
-@Suppress("UNUSED_PARAMETER")
 class ToStringRenamePass() : JadxDecompilePass {
 	val logger = Logger.getLogger("ToStringRename")
 
