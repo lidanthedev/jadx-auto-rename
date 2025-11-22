@@ -66,13 +66,16 @@ class LogRenamePass : JadxDecompilePass {
                                 val parentCls = mth.parentClass
                                 if (parentCls.contains(AFlag.DONT_RENAME)) continue
                                 // skip if class already has alias (manually renamed)
-                                try {
-                                    val clsInfo = parentCls.getClassInfo()
-                                    if (clsInfo != null && clsInfo.hasAlias()) continue
-									if (RenameUtils.isClassUserRenamed(parentCls)) continue
-                                } catch (_: Exception) {
-                                    // ignore
-                                }
+								try {
+									val clsInfo = parentCls.getClassInfo()
+									if (clsInfo != null && clsInfo.hasAlias()) {
+										if (RenameUtils.isClassUserRenamed(parentCls)) {
+											continue
+										}
+									}
+								} catch (_: Exception) {
+									// ignore
+								}
                                 val currentName = parentCls.name
                                 // avoid renaming if class already matches or too short
                                 if (currentName == tag) continue

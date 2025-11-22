@@ -15,7 +15,6 @@ import jadx.core.dex.nodes.ClassNode
 import jadx.core.dex.nodes.InsnNode
 import jadx.core.dex.nodes.MethodNode
 import jadx.core.dex.nodes.RootNode
-import jadx.plugins.renamer.AutoRenameOptions
 import jadx.plugins.renamer.util.RenameUtils
 import java.util.logging.Logger
 
@@ -31,8 +30,8 @@ class ToStringRenamePass() : JadxDecompilePass {
 
 	override fun getInfo(): JadxPassInfo {
 		return OrderedJadxPassInfo(
-			"SourceFileRename",
-			"Rename files according to SourceFile attribute"
+			"ToStringRename",
+			"Rename classes and fields according to toString() output"
 		)
 			.after("SimplifyVisitor")
 	}
@@ -87,7 +86,7 @@ class ToStringRenamePass() : JadxDecompilePass {
 									mth.parentClass.rename(clsName)
 									RenameReasonAttr.forNode(mth.parentClass).append("from toString()")
 								}
-							} catch (e: Exception) {
+							} catch (_: Exception) {
 								// ignore
 							}
 						}

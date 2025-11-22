@@ -4,6 +4,7 @@ import jadx.api.plugins.pass.JadxPassInfo
 import jadx.api.plugins.pass.impl.OrderedJadxPassInfo
 import jadx.api.plugins.pass.types.JadxDecompilePass
 import jadx.api.plugins.input.data.attributes.JadxAttrType
+import jadx.core.deobf.NameMapper
 import jadx.core.dex.attributes.AFlag
 import jadx.core.dex.attributes.AType
 import jadx.core.dex.attributes.FieldInitInsnAttr
@@ -148,6 +149,9 @@ class TagRenamePass : JadxDecompilePass {
         } catch (_: Exception) {
             // ignore
         }
+		if (strValue.length < 3 || !NameMapper.isValidIdentifier(strValue)) {
+			return
+		}
         cls.rename(strValue)
         RenameReasonAttr.forNode(cls).append("from TagRenamePass")
     }
