@@ -39,6 +39,9 @@ class ToStringRename(
 	}
 
 	override fun visit(mth: MethodNode) {
+		if (mth.contains(AFlag.DONT_RENAME)) {
+			return
+		}
 		if (mth.methodInfo.shortId == "toString()Ljava/lang/String;") {
 			val returnBlock = mth.exitBlock.predecessors.firstOrNull { it.contains(AFlag.RETURN) }
 			val lastInsn = returnBlock?.instructions?.lastOrNull()
