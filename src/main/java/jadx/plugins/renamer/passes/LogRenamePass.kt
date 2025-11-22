@@ -38,18 +38,19 @@ class LogRenamePass : JadxDecompilePass {
     }
 
     override fun visit(mth: MethodNode) {
+		if (mth.parentClass != null && mth.parentClass.contains(AFlag.DONT_RENAME)) return
         if (mth.contains(AFlag.DONT_RENAME)) return
-        if (mth.isNoCode()) return
+        if (mth.isNoCode) return
 
-        for (block in mth.getBasicBlocks()) {
-            for (insn in block.getInstructions()) {
+        for (block in mth.basicBlocks) {
+            for (insn in block.instructions) {
                 // check invoke instructions
-                if (insn.getType() != InsnType.INVOKE) continue
+                if (insn.type != InsnType.INVOKE) continue
                 if (insn !is InvokeNode) continue
                 val call = insn.callMth
                 val decl = call.declClass
-                if (decl != null && decl.getType() != null) {
-                    val clsType = decl.getType().getObject()
+                if (decl != null && decl.type != null) {
+                    val clsType = decl.type.getObject()
                     if (clsType == "Landroid/util/Log;" || clsType == "android.util.Log" || clsType.endsWith("android/util/Log")) {
                         val mthName = call.name
                         if (!LOG_METHODS.contains(mthName)) continue
@@ -66,7 +67,7 @@ class LogRenamePass : JadxDecompilePass {
                                 // avoid renaming if class already matches or too short
                                 if (currentName == tag) continue
                                 if (tag.length < 3) continue
-                                logger.info("Rename class ${parentCls} to '$tag' from Log call in ${mth}")
+                                logger.info("Rename class $parentCls to '$tag' from Log call in $mth")
                                 parentCls.rename(tag)
                                 RenameReasonAttr.forNode(parentCls).append("from LogRenamePass: $tag")
                             }
