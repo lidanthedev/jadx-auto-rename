@@ -16,6 +16,7 @@ import jadx.core.dex.nodes.InsnNode
 import jadx.core.dex.nodes.MethodNode
 import jadx.core.dex.nodes.RootNode
 import jadx.plugins.renamer.AutoRenameOptions
+import jadx.plugins.renamer.util.RenameUtils
 import java.util.logging.Logger
 
 class ToStringRenamePass() : JadxDecompilePass {
@@ -79,8 +80,8 @@ class ToStringRenamePass() : JadxDecompilePass {
 							// skip if class already manually renamed
 							try {
 								val info = mth.parentClass.getClassInfo()
-								if (info != null && info.hasAlias()) {
-									// don't override user alias
+								if (info != null && info.hasAlias() && RenameUtils.isClassUserRenamed(mth.parentClass)) {
+									// don't override
 								} else {
 									logger.info("rename class '${mth.parentClass.name}' to '$clsName'")
 									mth.parentClass.rename(clsName)
@@ -107,7 +108,7 @@ class ToStringRenamePass() : JadxDecompilePass {
 						// skip if field already manually renamed
 						try {
 							val finfo = fld.getFieldInfo()
-							if (finfo != null && finfo.hasAlias()) {
+							if (finfo != null && finfo.hasAlias() && RenameUtils.isFieldUserRenamed(fld)) {
 								// don't override
 							} else {
 								logger.info("rename field '${fld.name}' to '$fldName'")

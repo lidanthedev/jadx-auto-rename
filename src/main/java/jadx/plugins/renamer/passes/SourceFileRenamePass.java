@@ -9,6 +9,7 @@ import jadx.core.dex.attributes.AFlag;
 import jadx.core.dex.attributes.nodes.RenameReasonAttr;
 import jadx.core.dex.nodes.ClassNode;
 import jadx.core.dex.nodes.RootNode;
+import jadx.plugins.renamer.util.RenameUtils;
 
 public class SourceFileRenamePass implements JadxPreparePass {
 
@@ -35,7 +36,7 @@ public class SourceFileRenamePass implements JadxPreparePass {
 		// skip if class already manually renamed by user
 		try {
 			if (cls.getClassInfo() != null && cls.getClassInfo().hasAlias()) {
-				return;
+				if (RenameUtils.isClassUserRenamed(cls)) return;
 			}
 		} catch (Exception ignored) {
 			// ignore

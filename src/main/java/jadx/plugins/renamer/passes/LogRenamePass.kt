@@ -13,6 +13,7 @@ import jadx.core.dex.nodes.MethodNode
 import jadx.core.dex.nodes.RootNode
 import jadx.core.deobf.NameMapper
 import jadx.core.dex.attributes.nodes.RenameReasonAttr
+import jadx.plugins.renamer.util.RenameUtils
 import java.util.logging.Logger
 
 class LogRenamePass : JadxDecompilePass {
@@ -68,6 +69,7 @@ class LogRenamePass : JadxDecompilePass {
                                 try {
                                     val clsInfo = parentCls.getClassInfo()
                                     if (clsInfo != null && clsInfo.hasAlias()) continue
+									if (RenameUtils.isClassUserRenamed(parentCls)) continue
                                 } catch (_: Exception) {
                                     // ignore
                                 }

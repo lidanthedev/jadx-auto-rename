@@ -16,6 +16,8 @@ import jadx.core.dex.nodes.RootNode
 import jadx.core.utils.EncodedValueUtils
 import jadx.core.utils.InsnUtils
 import java.util.logging.Logger
+import jadx.plugins.renamer.util.RenameUtils.Companion.isClassUserRenamed
+import jadx.plugins.renamer.util.RenameUtils.Companion.isFieldUserRenamed
 
 class TagRenamePass : JadxDecompilePass {
     private val logger = Logger.getLogger("TagRenamePass")
@@ -49,7 +51,10 @@ class TagRenamePass : JadxDecompilePass {
         try {
             val classInfo = cls.getClassInfo()
             if (classInfo != null && classInfo.hasAlias()) {
-                return
+                // only skip if alias was set by user (persisted rename), not by other passes
+                if (isClassUserRenamed(cls)) {
+                    return
+                }
             }
         } catch (_: Exception) {
             // ignore
@@ -71,7 +76,10 @@ class TagRenamePass : JadxDecompilePass {
         try {
             val fInfo = fld.getFieldInfo()
             if (fInfo != null && fInfo.hasAlias()) {
-                return
+                // only skip if alias was set by user (persisted rename), not by other passes
+                if (isFieldUserRenamed(fld)) {
+                    return
+                }
             }
         } catch (_: Exception) {
             // ignore
@@ -132,7 +140,10 @@ class TagRenamePass : JadxDecompilePass {
         try {
             val classInfo = cls.getClassInfo()
             if (classInfo != null && classInfo.hasAlias()) {
-                return
+                // only skip if class alias was set by user
+                if (isClassUserRenamed(cls)) {
+                    return
+                }
             }
         } catch (_: Exception) {
             // ignore
