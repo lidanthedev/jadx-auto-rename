@@ -16,7 +16,7 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 	public JadxPluginInfo getPluginInfo() {
 		return JadxPluginInfoBuilder.pluginId(PLUGIN_ID)
 				.name("Auto Rename Plugin")
-				.description("Rename classes automatically and make your job easier")
+				.description("Rename classes automatically and make reversing easier")
 				.homepage("https://github.com/lidanthedev/jadx-auto-rename")
 				.requiredJadxVersion("1.5.1, r2333")
 				.build();
