@@ -101,9 +101,9 @@ class ToStringRenamePass() : JadxDecompilePass {
 						return false
 					}
 					val iget = insn
-					val fldInfo = iget.index as FieldInfo
+					val fldInfo = iget.index as? FieldInfo ?: return false
 					val fld = mth.parentClass.searchField(fldInfo)
-					if (fld != null && NameMapper.isValidIdentifier(fldName)) {
+					if (fld != null && fldName != null && NameMapper.isValidIdentifier(fldName)) {
 						// skip if field already manually renamed
 						try {
 							val finfo = fld.getFieldInfo()

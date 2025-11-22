@@ -3,16 +3,16 @@ package jadx.plugins.renamer.passes
 import jadx.api.plugins.pass.JadxPassInfo
 import jadx.api.plugins.pass.impl.OrderedJadxPassInfo
 import jadx.api.plugins.pass.types.JadxDecompilePass
+import jadx.core.deobf.NameMapper
 import jadx.core.dex.attributes.AFlag
-import jadx.core.dex.instructions.InvokeNode
+import jadx.core.dex.attributes.nodes.RenameReasonAttr
 import jadx.core.dex.instructions.InsnType
+import jadx.core.dex.instructions.InvokeNode
 import jadx.core.dex.instructions.args.InsnArg
-import jadx.core.utils.InsnUtils
 import jadx.core.dex.nodes.ClassNode
 import jadx.core.dex.nodes.MethodNode
 import jadx.core.dex.nodes.RootNode
-import jadx.core.deobf.NameMapper
-import jadx.core.dex.attributes.nodes.RenameReasonAttr
+import jadx.core.utils.InsnUtils
 import jadx.plugins.renamer.util.RenameUtils
 import java.util.logging.Logger
 
@@ -53,7 +53,7 @@ class LogRenamePass : JadxDecompilePass {
                 val decl = call.declClass
                 if (decl != null && decl.type != null) {
                     val clsType = decl.type.getObject()
-                    if (clsType == "Landroid/util/Log;" || clsType == "android.util.Log" || clsType.endsWith("android/util/Log")) {
+					if (clsType == "Landroid/util/Log;" || clsType == "android.util.Log") {
                         val mthName = call.name
                         if (!LOG_METHODS.contains(mthName)) continue
                         // first arg is TAG
@@ -83,6 +83,7 @@ class LogRenamePass : JadxDecompilePass {
                                 logger.info("Rename class $parentCls to '$tag' from Log call in $mth")
                                 parentCls.rename(tag)
                                 RenameReasonAttr.forNode(parentCls).append("from LogRenamePass: $tag")
+								return
                             }
                         }
                     }
