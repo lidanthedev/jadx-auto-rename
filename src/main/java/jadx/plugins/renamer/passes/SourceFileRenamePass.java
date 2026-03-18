@@ -10,6 +10,7 @@ import jadx.core.dex.attributes.nodes.RenameReasonAttr;
 import jadx.core.dex.nodes.ClassNode;
 import jadx.core.dex.nodes.RootNode;
 import jadx.plugins.renamer.util.RenameUtils;
+import kotlin.text.StringsKt;
 
 public class SourceFileRenamePass implements JadxPreparePass {
 
@@ -50,7 +51,11 @@ public class SourceFileRenamePass implements JadxPreparePass {
 		if (fileName.isEmpty() || fileName.startsWith("SourceFile") || fileName.startsWith("r8") || fileName.startsWith("R8")) {
 			return;
 		}
-		String origName = fileName.split("\\.")[0]; // remove extension
+		String[] split = fileName.split("\\.");
+		if (split.length > 2) {
+			return; // unexpected format
+		}
+		String origName = split[0]; // remove extension
 
 		cls.rename(origName);
 		RenameReasonAttr.forNode(cls).append("from SourceFile attribute");
