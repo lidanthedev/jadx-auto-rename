@@ -6,9 +6,12 @@ import jadx.api.plugins.pass.types.JadxDecompilePass
 import jadx.core.deobf.NameMapper
 import jadx.core.dex.attributes.AFlag
 import jadx.core.dex.attributes.nodes.RenameReasonAttr
+import jadx.core.dex.instructions.args.ArgType
+import jadx.core.dex.instructions.args.InsnArg
 import jadx.core.dex.info.MethodInfo
 import jadx.core.dex.instructions.InsnType
 import jadx.core.dex.instructions.InvokeNode
+import jadx.core.dex.instructions.args.InsnWrapArg
 import jadx.core.dex.instructions.args.RegisterArg
 import jadx.core.dex.nodes.ClassNode
 import jadx.core.dex.nodes.MethodNode
@@ -22,6 +25,8 @@ class ConstArgRenamePass : JadxDecompilePass {
 
 	private lateinit var root: RootNode
 	private val callerMethods = HashSet<MethodNode>()
+	private val nullCheckCache = HashMap<MethodInfo, Boolean>()
+	private val throwHelperCache = HashMap<MethodInfo, Boolean>()
 
 	override fun getInfo(): JadxPassInfo {
 		return OrderedJadxPassInfo(
@@ -33,6 +38,8 @@ class ConstArgRenamePass : JadxDecompilePass {
 	override fun init(root: RootNode) {
 		this.root = root
 		callerMethods.clear()
+		nullCheckCache.clear()
+		throwHelperCache.clear()
 		for (rule in RULES) {
 			for (resolved in resolveRuleMethods(root, rule)) {
 				callerMethods.addAll(resolved.useIn)
@@ -51,7 +58,7 @@ class ConstArgRenamePass : JadxDecompilePass {
 		if (callerMethods.isNotEmpty() && !callerMethods.contains(mth)) {
 			return
 		}
-		val parentCls = mth.parentClass ?: return
+		val parentCls = mth.parentClass
 		if (parentCls.contains(AFlag.DONT_RENAME)) {
 			return
 		}
@@ -67,8 +74,21 @@ class ConstArgRenamePass : JadxDecompilePass {
 					}
 					applyRule(mth, parentCls, insn, rule)
 				}
+				applyObfuscatedNullCheckRule(insn)
 			}
 		}
+	}
+
+	private fun applyObfuscatedNullCheckRule(invoke: InvokeNode) {
+		if (!invoke.isStaticCall || invoke.argsCount < 2) {
+			return
+		}
+		if (!isLikelyObfuscatedNullCheck(invoke.callMth)) {
+			return
+		}
+		val constName = InsnUtils.getConstValueByArg(root, invoke.getArg(1)) as? String ?: return
+		val normalizedName = normalizeName(constName) ?: return
+		renameArgument(invoke, 0, normalizedName)
 	}
 
 	private fun applyRule(mth: MethodNode, parentCls: ClassNode, invoke: InvokeNode, rule: Rule) {
@@ -159,6 +179,86 @@ class ConstArgRenamePass : JadxDecompilePass {
 			return null
 		}
 		return token
+	}
+
+	private fun isLikelyObfuscatedNullCheck(callMth: MethodInfo): Boolean {
+		return nullCheckCache.getOrPut(callMth) {
+			val mth = root.resolveMethod(callMth) ?: return@getOrPut false
+			if (mth.isNoCode || !mth.accessFlags.isStatic || mth.methodInfo.returnType != ArgType.VOID) {
+				return@getOrPut false
+			}
+			val argTypes = mth.methodInfo.argumentsTypes
+			if (argTypes.size < 2 || argTypes[1] != ArgType.STRING) {
+				return@getOrPut false
+			}
+			val insns = prepareMethodAndGetInsns(mth) ?: return@getOrPut false
+			val argRegs = runCatching { mth.argRegs }.getOrNull() ?: return@getOrPut false
+			if (argRegs.size < 2) {
+				return@getOrPut false
+			}
+			val firstArgReg = argRegs[0].regNum
+			val secondArgReg = argRegs[1].regNum
+
+			val hasFirstArgNullCheck = insns.any { insn ->
+				if (insn.type != InsnType.IF || insn.argsCount < 2) {
+					false
+				} else {
+					(isRegNum(insn.getArg(0), firstArgReg) && insn.getArg(1).isZeroConst()) ||
+						(isRegNum(insn.getArg(1), firstArgReg) && insn.getArg(0).isZeroConst())
+				}
+			}
+			if (!hasFirstArgNullCheck) {
+				return@getOrPut false
+			}
+
+			var secondArgUsed = false
+			var hasThrowingPath = false
+			for (insn in insns) {
+				if (insn.type == InsnType.THROW) {
+					hasThrowingPath = true
+				}
+				if (insn is InvokeNode && insn.getArgList().any { arg -> isRegNum(arg, secondArgReg) }) {
+					secondArgUsed = true
+					if (isThrowHelper(insn.callMth)) {
+						hasThrowingPath = true
+					}
+				}
+			}
+			secondArgUsed && hasThrowingPath
+		}
+	}
+
+	private fun isThrowHelper(callMth: MethodInfo): Boolean {
+		return throwHelperCache.getOrPut(callMth) {
+			val mth = root.resolveMethod(callMth) ?: return@getOrPut false
+			val insns = prepareMethodAndGetInsns(mth) ?: return@getOrPut false
+			insns.any { it.type == InsnType.THROW }
+		}
+	}
+
+	private fun prepareMethodAndGetInsns(mth: MethodNode): List<jadx.core.dex.nodes.InsnNode>? {
+		mth.instructions?.let { insnArr ->
+			return insnArr.filterNotNull()
+		}
+		mth.basicBlocks?.let { blocks ->
+			if (blocks.isNotEmpty()) {
+				return blocks.flatMap { block -> block.instructions }
+			}
+		}
+		if (!mth.isLoaded) {
+			runCatching { mth.load() }.onFailure { return null }
+		}
+		return mth.instructions?.filterNotNull()
+	}
+
+	private fun isRegNum(arg: InsnArg, regNum: Int): Boolean {
+		if (arg is RegisterArg) {
+			return arg.regNum == regNum
+		}
+		if (arg is InsnWrapArg) {
+			return arg.wrapInsn.argList.any { nested -> isRegNum(nested, regNum) }
+		}
+		return false
 	}
 
 	private fun matchesRule(callMth: MethodInfo, rule: Rule): Boolean {

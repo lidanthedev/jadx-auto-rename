@@ -49,6 +49,7 @@ class JadxAutoRenamePluginTest {
 			assertThat(cls).isNotNull();
 			String code = cls.getCode();
 			assertThat(code).contains("demo(Object innerPadding, Object activity)");
+			assertThat(code).contains("demoObf(Object name)");
 		}
 	}
 
@@ -61,6 +62,7 @@ class JadxAutoRenamePluginTest {
 			assertThat(cls).isNotNull();
 			String code = cls.getCode();
 			assertThat(code).doesNotContain("demo(Object innerPadding, Object activity)");
+			assertThat(code).doesNotContain("demoObf(Object name)");
 		}
 	}
 
