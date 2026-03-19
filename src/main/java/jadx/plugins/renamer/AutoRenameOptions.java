@@ -8,6 +8,7 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean toStringRename;
 	private boolean tagRename;
 	private boolean logRename;
+	private boolean constArgRename;
 
 	@Override
 	public void registerOptions() {
@@ -27,6 +28,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable Auto Rename by Log TAGs")
 				.defaultValue(true)
 				.setter(v -> logRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.enable")
+				.description("Enable Auto Rename by constant invoke arguments")
+				.defaultValue(true)
+				.setter(v -> constArgRename = v);
 	}
 
 	public boolean isSourceFileRename() {
@@ -43,5 +48,9 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isLogRename() {
 		return logRename;
+	}
+
+	public boolean isConstArgRename() {
+		return constArgRename;
 	}
 }

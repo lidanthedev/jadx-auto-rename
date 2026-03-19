@@ -11,6 +11,9 @@ import org.junit.jupiter.api.TestInstance;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,9 +42,36 @@ class JadxAutoRenamePluginTest {
 		assertThat(clsCode).contains("System.out.println(\"Hello, World\")");
 	}
 
+	@Test
+	public void constArgRenameEnabledTest() throws Exception {
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali")) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).contains("demo(Object innerPadding, Object activity)");
+		}
+	}
+
+	@Test
+	public void constArgRenameDisabledTest() throws Exception {
+		Map<String, String> pluginOptions = new HashMap<>();
+		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.enable", "false");
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).doesNotContain("demo(Object innerPadding, Object activity)");
+		}
+	}
+
 	private JadxDecompiler createAndInitDecompiler(String sampleFileName) throws Exception {
+		return createAndInitDecompiler(sampleFileName, Collections.emptyMap());
+	}
+
+	private JadxDecompiler createAndInitDecompiler(String sampleFileName, Map<String, String> pluginOptions) throws Exception {
 		JadxArgs args = new JadxArgs();
 		args.getInputFiles().add(getSampleFile(sampleFileName));
+		args.setPluginOptions(pluginOptions);
 		JadxDecompiler jadx = new JadxDecompiler(args);
 		jadx.registerPlugin(new JadxAutoRenamePlugin());
 		jadx.load();
