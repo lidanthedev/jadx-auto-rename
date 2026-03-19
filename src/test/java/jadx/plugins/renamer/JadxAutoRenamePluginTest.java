@@ -49,7 +49,7 @@ class JadxAutoRenamePluginTest {
 			assertThat(cls).isNotNull();
 			String code = cls.getCode();
 			assertThat(code).contains("demo(Object innerPadding, Object activity)");
-			assertThat(code).contains("demoObf(Object name)");
+			assertThat(code).contains("checkNotNullParameter(name, \"name\")");
 		}
 	}
 
@@ -86,7 +86,7 @@ class JadxAutoRenamePluginTest {
 			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
 			assertThat(cls).isNotNull();
 			String code = cls.getCode();
-			assertThat(code).contains("demoObf(Object name)");
+			assertThat(code).contains("checkNotNullParameter(name, \"name\")");
 		}
 	}
 

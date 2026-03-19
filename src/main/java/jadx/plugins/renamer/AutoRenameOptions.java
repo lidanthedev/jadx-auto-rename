@@ -8,6 +8,8 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean toStringRename;
 	private boolean tagRename;
 	private boolean logRename;
+	private boolean intrinsicsRename;
+	private boolean intrinsicsClassRename;
 	private boolean constArgRename;
 	private boolean constArgNullCheckRules;
 	private boolean constArgJsonRules;
@@ -33,6 +35,14 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable Auto Rename by Log TAGs")
 				.defaultValue(true)
 				.setter(v -> logRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".intrinsics_rename.enable")
+				.description("Enable Kotlin Intrinsics detection and rename pass")
+				.defaultValue(true)
+				.setter(v -> intrinsicsRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".intrinsics_rename.class_rename.enable")
+				.description("Enable class rename to Intrinsics when marker strings are detected")
+				.defaultValue(true)
+				.setter(v -> intrinsicsClassRename = v);
 		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.enable")
 				.description("Enable Auto Rename by constant invoke arguments")
 				.defaultValue(true)
@@ -54,8 +64,8 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.defaultValue(true)
 				.setter(v -> constArgObfuscatedNullCheck = v);
 		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.kotlin_intrinsics_class_rename.enable")
-				.description("Enable Kotlin Intrinsics class rename by marker string")
-				.defaultValue(true)
+				.description("Enable legacy Kotlin Intrinsics handling inside ConstArgRename pass")
+				.defaultValue(false)
 				.setter(v -> constArgKotlinIntrinsicsClassRename = v);
 	}
 
@@ -73,6 +83,14 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isLogRename() {
 		return logRename;
+	}
+
+	public boolean isIntrinsicsRename() {
+		return intrinsicsRename;
+	}
+
+	public boolean isIntrinsicsClassRename() {
+		return intrinsicsClassRename;
 	}
 
 	public boolean isConstArgRename() {

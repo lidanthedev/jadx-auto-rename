@@ -47,7 +47,7 @@ class ConstArgRenamePass(
 		throwHelperCache.clear()
 		intrinsicsClassNames.clear()
 		enabledRules = RULES.filter(::isRuleEnabled)
-		if (ruleOptions.nullCheckRules) {
+		if (ruleOptions.nullCheckRules && ruleOptions.kotlinIntrinsicsClassRename) {
 			intrinsicsClassNames.addAll(findKotlinIntrinsicsClasses(root))
 			if (ruleOptions.kotlinIntrinsicsClassRename) {
 				renameDetectedIntrinsicsClasses(root)
@@ -88,7 +88,7 @@ class ConstArgRenamePass(
 					}
 					applyRule(mth, parentCls, insn, rule)
 				}
-				if (ruleOptions.nullCheckRules) {
+				if (ruleOptions.nullCheckRules && ruleOptions.kotlinIntrinsicsClassRename) {
 					applyIntrinsicsRule(insn)
 				}
 				if (ruleOptions.obfuscatedNullCheckRules) {
