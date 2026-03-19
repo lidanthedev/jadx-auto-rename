@@ -29,7 +29,9 @@ class ConstArgRenamePass(
 	private val callerMethods = HashSet<MethodNode>()
 	private val nullCheckCache = HashMap<MethodInfo, Boolean>()
 	private val throwHelperCache = HashMap<MethodInfo, Boolean>()
+	private val intrinsicsClassNames = HashSet<String>()
 	private var enabledRules = emptyList<Rule>()
+	private var requireFullInvokeScan = false
 
 	override fun getInfo(): JadxPassInfo {
 		return OrderedJadxPassInfo(
@@ -43,7 +45,13 @@ class ConstArgRenamePass(
 		callerMethods.clear()
 		nullCheckCache.clear()
 		throwHelperCache.clear()
+		intrinsicsClassNames.clear()
 		enabledRules = RULES.filter(::isRuleEnabled)
+		if (ruleOptions.nullCheckRules) {
+			intrinsicsClassNames.addAll(findKotlinIntrinsicsClasses(root))
+			renameDetectedIntrinsicsClasses(root)
+		}
+		requireFullInvokeScan = ruleOptions.obfuscatedNullCheckRules || intrinsicsClassNames.isNotEmpty()
 		for (rule in enabledRules) {
 			for (resolved in resolveRuleMethods(root, rule)) {
 				callerMethods.addAll(resolved.useIn)
@@ -59,7 +67,7 @@ class ConstArgRenamePass(
 		if (mth.contains(AFlag.DONT_RENAME) || mth.isNoCode) {
 			return
 		}
-		if (callerMethods.isNotEmpty() && !callerMethods.contains(mth)) {
+		if (!requireFullInvokeScan && callerMethods.isNotEmpty() && !callerMethods.contains(mth)) {
 			return
 		}
 		val parentCls = mth.parentClass
@@ -78,11 +86,29 @@ class ConstArgRenamePass(
 					}
 					applyRule(mth, parentCls, insn, rule)
 				}
+				if (ruleOptions.nullCheckRules) {
+					applyIntrinsicsRule(insn)
+				}
 				if (ruleOptions.obfuscatedNullCheckRules) {
 					applyObfuscatedNullCheckRule(insn)
 				}
 			}
 		}
+	}
+
+	private fun applyIntrinsicsRule(invoke: InvokeNode) {
+		if (!invoke.isStaticCall || invoke.argsCount < 2) {
+			return
+		}
+		if (!intrinsicsClassNames.contains(invoke.callMth.declClass.fullName)) {
+			return
+		}
+		if (!isLikelyIntrinsicsNameArgMethod(invoke.callMth)) {
+			return
+		}
+		val constName = InsnUtils.getConstValueByArg(root, invoke.getArg(1)) as? String ?: return
+		val normalizedName = normalizeName(constName) ?: return
+		renameArgument(invoke, 0, normalizedName)
 	}
 
 	private fun applyObfuscatedNullCheckRule(invoke: InvokeNode) {
@@ -234,6 +260,71 @@ class ConstArgRenamePass(
 		}
 	}
 
+	private fun isLikelyIntrinsicsNameArgMethod(callMth: MethodInfo): Boolean {
+		if (callMth.returnType != ArgType.VOID || callMth.argsCount < 2) {
+			return false
+		}
+		val args = callMth.argumentsTypes
+		if (args[1] != ArgType.STRING) {
+			return false
+		}
+		return true
+	}
+
+	private fun findKotlinIntrinsicsClasses(root: RootNode): Set<String> {
+		val result = HashSet<String>()
+		for (cls in root.classes) {
+			if (containsIntrinsicsCheckHasClassMarker(cls)) {
+				result.add(cls.classInfo.fullName)
+			}
+		}
+		return result
+	}
+
+	private fun renameDetectedIntrinsicsClasses(root: RootNode) {
+		for (rawClsName in intrinsicsClassNames) {
+			val cls = root.resolveRawClass(rawClsName) ?: continue
+			renameIntrinsicsClass(cls)
+		}
+	}
+
+	private fun renameIntrinsicsClass(cls: ClassNode) {
+		if (cls.contains(AFlag.DONT_RENAME)) {
+			return
+		}
+		if (cls.name == "Intrinsics") {
+			return
+		}
+		try {
+			if (cls.classInfo.hasAlias() && RenameUtils.isClassUserRenamed(cls)) {
+				return
+			}
+		} catch (_: Exception) {
+			// ignore
+		}
+		logger.info("Rename class '$cls' to 'Intrinsics' by Kotlin marker string")
+		cls.rename("Intrinsics")
+		RenameReasonAttr.forNode(cls).append("from ConstArgRenamePass: kotlin.intrinsics.marker")
+	}
+
+	private fun containsIntrinsicsCheckHasClassMarker(cls: ClassNode): Boolean {
+		for (mth in cls.methods) {
+			val insns = prepareMethodAndGetInsns(mth) ?: continue
+			for (insn in insns) {
+				val constVal = InsnUtils.getConstValueByInsn(root, insn)
+				if (constVal is String && isIntrinsicsClassMarker(constVal)) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	private fun isIntrinsicsClassMarker(str: String): Boolean {
+		return str.contains(INTRINSICS_MARKER_UPDATE_RUNTIME)
+			|| str.contains(INTRINSICS_MARKER_REQUIRED_VERSION)
+	}
+
 	private fun isThrowHelper(callMth: MethodInfo): Boolean {
 		return throwHelperCache.getOrPut(callMth) {
 			val mth = root.resolveMethod(callMth) ?: return@getOrPut false
@@ -349,6 +440,8 @@ class ConstArgRenamePass(
 
 	companion object {
 		private val IDENTIFIER_REGEX = Regex("[A-Za-z_][A-Za-z0-9_]*")
+		private const val INTRINSICS_MARKER_UPDATE_RUNTIME = "Please update the Kotlin runtime to the latest version"
+		private const val INTRINSICS_MARKER_REQUIRED_VERSION = "this code requires the Kotlin runtime of version at least"
 
 		private val RULES = listOf(
 			Rule(

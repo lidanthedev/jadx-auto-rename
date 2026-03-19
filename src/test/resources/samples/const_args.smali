@@ -26,6 +26,20 @@
     throw v0
 .end method
 
+.method public static k(Ljava/lang/String;)V
+    .registers 3
+    const-string v0, "Please update the Kotlin runtime to the latest version"
+    const-string v1, "this code requires the Kotlin runtime of version at least "
+    return-void
+.end method
+
+.method public static l(Ljava/lang/String;Ljava/lang/String;)V
+    .registers 3
+    const-string v0, "Class "
+    const-string v1, " is not found."
+    return-void
+.end method
+
 .method public static get(Ljava/lang/String;)Ljava/lang/Object;
     .registers 1
     const/4 v0, 0x0
