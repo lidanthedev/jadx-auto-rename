@@ -20,13 +20,16 @@ import jadx.core.utils.InsnUtils
 import jadx.plugins.renamer.util.RenameUtils
 import java.util.logging.Logger
 
-class ConstArgRenamePass : JadxDecompilePass {
+class ConstArgRenamePass(
+	private val ruleOptions: RuleOptions = RuleOptions(),
+) : JadxDecompilePass {
 	private val logger = Logger.getLogger("ConstArgRenamePass")
 
 	private lateinit var root: RootNode
 	private val callerMethods = HashSet<MethodNode>()
 	private val nullCheckCache = HashMap<MethodInfo, Boolean>()
 	private val throwHelperCache = HashMap<MethodInfo, Boolean>()
+	private var enabledRules = emptyList<Rule>()
 
 	override fun getInfo(): JadxPassInfo {
 		return OrderedJadxPassInfo(
@@ -40,7 +43,8 @@ class ConstArgRenamePass : JadxDecompilePass {
 		callerMethods.clear()
 		nullCheckCache.clear()
 		throwHelperCache.clear()
-		for (rule in RULES) {
+		enabledRules = RULES.filter(::isRuleEnabled)
+		for (rule in enabledRules) {
 			for (resolved in resolveRuleMethods(root, rule)) {
 				callerMethods.addAll(resolved.useIn)
 			}
@@ -68,13 +72,15 @@ class ConstArgRenamePass : JadxDecompilePass {
 				if (insn.type != InsnType.INVOKE || insn !is InvokeNode) {
 					continue
 				}
-				for (rule in RULES) {
+				for (rule in enabledRules) {
 					if (!matchesRule(insn.callMth, rule)) {
 						continue
 					}
 					applyRule(mth, parentCls, insn, rule)
 				}
-				applyObfuscatedNullCheckRule(insn)
+				if (ruleOptions.obfuscatedNullCheckRules) {
+					applyObfuscatedNullCheckRule(insn)
+				}
 			}
 		}
 	}
@@ -265,13 +271,21 @@ class ConstArgRenamePass : JadxDecompilePass {
 		if (rule.classNames.isNotEmpty() && !rule.classNames.contains(callMth.declClass.fullName)) {
 			return false
 		}
-		if (!rule.methodNames.contains(callMth.name)) {
+		if (!rule.matchesMethodName(callMth.name)) {
 			return false
 		}
 		if (rule.minArgs >= 0 && callMth.argsCount < rule.minArgs) {
 			return false
 		}
 		return true
+	}
+
+	private fun isRuleEnabled(rule: Rule): Boolean {
+		return when (rule.group) {
+			RuleGroup.NULL_CHECK -> ruleOptions.nullCheckRules
+			RuleGroup.JSON -> ruleOptions.jsonRules
+			RuleGroup.LOG -> ruleOptions.logRules
+		}
 	}
 
 	private fun resolveRuleMethods(root: RootNode, rule: Rule): List<MethodNode> {
@@ -282,7 +296,7 @@ class ConstArgRenamePass : JadxDecompilePass {
 		for (className in rule.classNames) {
 			val clsNode = root.resolveRawClass(className) ?: continue
 			for (method in clsNode.methods) {
-				if (!rule.methodNames.contains(method.methodInfo.name)) {
+				if (!rule.matchesMethodName(method.methodInfo.name)) {
 					continue
 				}
 				if (rule.minArgs >= 0 && method.methodInfo.argsCount < rule.minArgs) {
@@ -303,12 +317,34 @@ class ConstArgRenamePass : JadxDecompilePass {
 
 	private data class Rule(
 		val id: String,
+		val group: RuleGroup,
 		val classNames: Set<String>,
 		val methodNames: Set<String>,
+		val methodPrefixes: Set<String> = emptySet(),
 		val target: RenameTarget,
 		val nameArgIndex: Int,
 		val otherArgIndex: Int = -1,
 		val minArgs: Int = -1,
+	) {
+		fun matchesMethodName(name: String): Boolean {
+			if (methodNames.contains(name)) {
+				return true
+			}
+			return methodPrefixes.any { prefix -> name.startsWith(prefix) }
+		}
+	}
+
+	private enum class RuleGroup {
+		NULL_CHECK,
+		JSON,
+		LOG,
+	}
+
+	data class RuleOptions(
+		val nullCheckRules: Boolean = true,
+		val jsonRules: Boolean = true,
+		val logRules: Boolean = false,
+		val obfuscatedNullCheckRules: Boolean = true,
 	)
 
 	companion object {
@@ -317,6 +353,7 @@ class ConstArgRenamePass : JadxDecompilePass {
 		private val RULES = listOf(
 			Rule(
 				id = "generic.checkNotNullParameter",
+				group = RuleGroup.NULL_CHECK,
 				classNames = emptySet(),
 				methodNames = setOf("checkNotNullParameter"),
 				target = RenameTarget.ARGUMENT,
@@ -326,6 +363,7 @@ class ConstArgRenamePass : JadxDecompilePass {
 			),
 			Rule(
 				id = "generic.notNull",
+				group = RuleGroup.NULL_CHECK,
 				classNames = emptySet(),
 				methodNames = setOf("notNull"),
 				target = RenameTarget.ARGUMENT,
@@ -335,6 +373,7 @@ class ConstArgRenamePass : JadxDecompilePass {
 			),
 			Rule(
 				id = "preconditions.checkNotNull",
+				group = RuleGroup.NULL_CHECK,
 				classNames = setOf(
 					"com.google.common.base.Preconditions",
 					"androidx.core.util.Preconditions",
@@ -347,23 +386,18 @@ class ConstArgRenamePass : JadxDecompilePass {
 				minArgs = 2,
 			),
 			Rule(
-				id = "generic.get",
-				classNames = emptySet(),
-				methodNames = setOf("get"),
-				target = RenameTarget.ASSIGNEE,
-				nameArgIndex = 0,
-				minArgs = 1,
-			),
-			Rule(
 				id = "json.get",
+				group = RuleGroup.JSON,
 				classNames = setOf("org.json.JSONObject"),
-				methodNames = setOf("get", "opt", "optJSONObject", "optJSONArray", "optString"),
+				methodNames = emptySet(),
+				methodPrefixes = setOf("get", "opt"),
 				target = RenameTarget.ASSIGNEE,
 				nameArgIndex = 0,
 				minArgs = 1,
 			),
 			Rule(
 				id = "log.tag",
+				group = RuleGroup.LOG,
 				classNames = setOf("android.util.Log"),
 				methodNames = setOf("d", "i", "w", "e", "v", "wtf", "println"),
 				target = RenameTarget.CLASS,

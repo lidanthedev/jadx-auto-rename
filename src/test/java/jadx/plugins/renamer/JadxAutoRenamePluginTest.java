@@ -66,6 +66,18 @@ class JadxAutoRenamePluginTest {
 		}
 	}
 
+	@Test
+	public void constArgNullCheckRuleDisabledTest() throws Exception {
+		Map<String, String> pluginOptions = new HashMap<>();
+		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.null_check.enable", "false");
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).doesNotContain("demo(Object innerPadding, Object activity)");
+		}
+	}
+
 	private JadxDecompiler createAndInitDecompiler(String sampleFileName) throws Exception {
 		return createAndInitDecompiler(sampleFileName, Collections.emptyMap());
 	}

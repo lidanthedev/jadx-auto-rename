@@ -9,6 +9,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean tagRename;
 	private boolean logRename;
 	private boolean constArgRename;
+	private boolean constArgNullCheckRules;
+	private boolean constArgJsonRules;
+	private boolean constArgLogRules;
+	private boolean constArgObfuscatedNullCheck;
 
 	@Override
 	public void registerOptions() {
@@ -32,6 +36,22 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable Auto Rename by constant invoke arguments")
 				.defaultValue(true)
 				.setter(v -> constArgRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.null_check.enable")
+				.description("Enable const-arg rules for null-check methods")
+				.defaultValue(true)
+				.setter(v -> constArgNullCheckRules = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.json.enable")
+				.description("Enable const-arg rules for JSONObject get*/opt* methods")
+				.defaultValue(true)
+				.setter(v -> constArgJsonRules = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.log.enable")
+				.description("Enable const-arg rules for Log tag calls")
+				.defaultValue(false)
+				.setter(v -> constArgLogRules = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.obfuscated_null_check.enable")
+				.description("Enable heuristic const-arg renaming for obfuscated null-check wrappers")
+				.defaultValue(true)
+				.setter(v -> constArgObfuscatedNullCheck = v);
 	}
 
 	public boolean isSourceFileRename() {
@@ -52,5 +72,21 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isConstArgRename() {
 		return constArgRename;
+	}
+
+	public boolean isConstArgNullCheckRules() {
+		return constArgNullCheckRules;
+	}
+
+	public boolean isConstArgJsonRules() {
+		return constArgJsonRules;
+	}
+
+	public boolean isConstArgLogRules() {
+		return constArgLogRules;
+	}
+
+	public boolean isConstArgObfuscatedNullCheck() {
+		return constArgObfuscatedNullCheck;
 	}
 }

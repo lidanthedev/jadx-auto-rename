@@ -41,7 +41,12 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 			context.addPass(new LogRenamePass());
 		}
 		if (options.isConstArgRename()) {
-			context.addPass(new ConstArgRenamePass());
+			context.addPass(new ConstArgRenamePass(
+					new ConstArgRenamePass.RuleOptions(
+							options.isConstArgNullCheckRules(),
+							options.isConstArgJsonRules(),
+							options.isConstArgLogRules(),
+							options.isConstArgObfuscatedNullCheck())));
 		}
 	}
 }
