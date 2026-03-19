@@ -70,26 +70,45 @@ class IntrinsicsRenamePass(
 	}
 
 	private fun findIntrinsicsClasses(root: RootNode): List<ClassNode> {
-		val result = ArrayList<ClassNode>()
-		for (cls in root.classes) {
-			if (containsIntrinsicsMarker(cls)) {
-				result.add(cls)
-			}
+		val scoredClasses = root.classes.mapNotNull { cls ->
+			val score = scoreIntrinsicsClass(cls)
+			if (score > 0) cls to score else null
 		}
-		return result
+		if (scoredClasses.isEmpty()) {
+			return emptyList()
+		}
+		val bestScore = scoredClasses.maxOf { it.second }
+		val bestCandidates = scoredClasses
+			.filter { it.second == bestScore }
+			.map { it.first }
+			.sortedBy { it.classInfo.rawName }
+		if (bestCandidates.size > 1) {
+			logger.fine("Several Intrinsics candidates found with same score=$bestScore: ${bestCandidates.joinToString { it.classInfo.rawName }}")
+		}
+		return listOf(bestCandidates.first())
 	}
 
-	private fun containsIntrinsicsMarker(cls: ClassNode): Boolean {
+	private fun scoreIntrinsicsClass(cls: ClassNode): Int {
+		var score = 0
 		for (mth in cls.methods) {
 			val insns = collectInsns(mth) ?: continue
 			for (insn in insns) {
 				val constVal = InsnUtils.getConstValueByInsn(root, insn)
-				if (constVal is String && constVal.contains(INTRINSICS_MARKER_UPDATE_RUNTIME)) {
-					return true
+				if (constVal !is String) {
+					continue
+				}
+				if (EXPECTED_STRINGS.contains(constVal)) {
+					score += 2
+					continue
+				}
+				if (constVal.contains(INTRINSICS_MARKER_UPDATE_RUNTIME)
+					|| constVal.contains(INTRINSICS_MARKER_REQUIRED_VERSION)
+				) {
+					score += 3
 				}
 			}
 		}
-		return false
+		return score
 	}
 
 	private fun renameIntrinsicsClass(cls: ClassNode) {
@@ -407,9 +426,22 @@ class IntrinsicsRenamePass(
 
 	companion object {
 		private const val INTRINSICS_MARKER_UPDATE_RUNTIME = "Please update the Kotlin runtime to the latest version"
+		private const val INTRINSICS_MARKER_REQUIRED_VERSION =
+			"this code requires the Kotlin runtime of version at least "
 		private const val REIFIED_DIRECT_CALL_MSG = "This function has a reified type parameter and thus can only be inlined at compilation time, not called directly."
 		private val IDENTIFIER_REGEX = Regex("[A-Za-z_][A-Za-z0-9_]*")
 		private val SIMPLE_IDENTIFIER_REGEX = Regex("[A-Za-z0-9_$]+")
+		private val EXPECTED_STRINGS = setOf(
+			"lateinit property ",
+			" has not been initialized",
+			" must not be null",
+			"Method specified as non-null returned null: ",
+			"Field specified as non-null is null: ",
+			"Parameter specified as non-null is null: method ",
+			REIFIED_DIRECT_CALL_MSG,
+			" is not found. Please update the Kotlin runtime to the latest version",
+			" is not found: this code requires the Kotlin runtime of version at least ",
+		)
 	}
 }
 
