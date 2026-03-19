@@ -7,6 +7,7 @@ import jadx.api.plugins.JadxPluginInfoBuilder;
 import jadx.plugins.renamer.passes.LogRenamePass;
 import jadx.plugins.renamer.passes.ConstArgRenamePass;
 import jadx.plugins.renamer.passes.IntrinsicsRenamePass;
+import jadx.plugins.renamer.passes.KotlinMetadataCommentPass;
 import jadx.plugins.renamer.passes.SourceFileRenamePass;
 import jadx.plugins.renamer.passes.TagRenamePass;
 import jadx.plugins.renamer.passes.ToStringRenamePass;
@@ -44,6 +45,9 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 		if (options.isIntrinsicsRename()) {
 			context.addPass(new IntrinsicsRenamePass(new IntrinsicsRenamePass.Options(
 					options.isIntrinsicsClassRename())));
+		}
+		if (options.isKotlinMetadataComment()) {
+			context.addPass(new KotlinMetadataCommentPass());
 		}
 		if (options.isConstArgRename()) {
 			context.addPass(new ConstArgRenamePass(

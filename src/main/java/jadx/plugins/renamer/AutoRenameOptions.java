@@ -10,6 +10,7 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean logRename;
 	private boolean intrinsicsRename;
 	private boolean intrinsicsClassRename;
+	private boolean kotlinMetadataComment;
 	private boolean constArgRename;
 	private boolean constArgNullCheckRules;
 	private boolean constArgJsonRules;
@@ -43,6 +44,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable class rename to Intrinsics when marker strings are detected")
 				.defaultValue(true)
 				.setter(v -> intrinsicsClassRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".kotlin_metadata_comment.enable")
+				.description("Add Kotlin @Metadata summary as class comments")
+				.defaultValue(false)
+				.setter(v -> kotlinMetadataComment = v);
 		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.enable")
 				.description("Enable Auto Rename by constant invoke arguments")
 				.defaultValue(true)
@@ -91,6 +96,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isIntrinsicsClassRename() {
 		return intrinsicsClassRename;
+	}
+
+	public boolean isKotlinMetadataComment() {
+		return kotlinMetadataComment;
 	}
 
 	public boolean isConstArgRename() {
