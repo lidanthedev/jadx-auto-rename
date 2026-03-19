@@ -90,6 +90,32 @@ class JadxAutoRenamePluginTest {
 		}
 	}
 
+	@Test
+	public void getterSetterRenameEnabledTest() throws Exception {
+		try (JadxDecompiler decompiler = createAndInitDecompiler("getter_setter.smali")) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("GetterSetterSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).contains("useSet(Object title)");
+			assertThat(code).contains("useGetStatic(Object name)");
+			assertThat(code).contains("useSetStatic(Object obj, Object name)");
+		}
+	}
+
+	@Test
+	public void getterSetterRenameDisabledTest() throws Exception {
+		Map<String, String> pluginOptions = new HashMap<>();
+		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".getter_setter_rename.enable", "false");
+		try (JadxDecompiler decompiler = createAndInitDecompiler("getter_setter.smali", pluginOptions)) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("GetterSetterSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).doesNotContain("useSet(Object title)");
+			assertThat(code).doesNotContain("useGetStatic(Object name)");
+			assertThat(code).doesNotContain("useSetStatic(Object obj, Object name)");
+		}
+	}
+
 	private JadxDecompiler createAndInitDecompiler(String sampleFileName) throws Exception {
 		return createAndInitDecompiler(sampleFileName, Collections.emptyMap());
 	}
