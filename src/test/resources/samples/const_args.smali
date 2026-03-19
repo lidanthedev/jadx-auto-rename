@@ -83,4 +83,14 @@
     return-void
 .end method
 
+.method public static i(Ljava/lang/String;)V
+    .registers 3
+    const-string v0, "test: hello "
+    invoke-virtual {v0, p0}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
+    move-result-object p0
+    const-string v1, "TAG"
+    invoke-static {v1, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    return-void
+.end method
+
 

@@ -45,11 +45,10 @@ class JadxAutoRenamePluginTest {
 	@Test
 	public void constArgRenameEnabledTest() throws Exception {
 		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali")) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "ConstArgsSample");
 			assertThat(code).contains("demo(Object innerPadding, Object activity)");
 			assertThat(code).contains("checkNotNullParameter(name, \"name\")");
+			assertThat(code).contains("Object name");
 		}
 	}
 
@@ -58,9 +57,7 @@ class JadxAutoRenamePluginTest {
 		Map<String, String> pluginOptions = new HashMap<>();
 		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.enable", "false");
 		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "ConstArgsSample");
 			assertThat(code).doesNotContain("demo(Object innerPadding, Object activity)");
 			assertThat(code).doesNotContain("demoObf(Object name)");
 		}
@@ -71,9 +68,7 @@ class JadxAutoRenamePluginTest {
 		Map<String, String> pluginOptions = new HashMap<>();
 		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.null_check.enable", "false");
 		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "ConstArgsSample");
 			assertThat(code).doesNotContain("demo(Object innerPadding, Object activity)");
 		}
 	}
@@ -83,21 +78,38 @@ class JadxAutoRenamePluginTest {
 		Map<String, String> pluginOptions = new HashMap<>();
 		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.obfuscated_null_check.enable", "false");
 		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "ConstArgsSample");
 			assertThat(code).contains("checkNotNullParameter(name, \"name\")");
+		}
+	}
+
+	@Test
+	public void intrinsicsRenameEnabledByDefaultTest() throws Exception {
+		Map<String, String> pluginOptions = new HashMap<>();
+		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".log_rename.enable", "false");
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
+			String code = getClassCode(decompiler, "ConstArgsSample");
+			assertThat(code).contains("class Intrinsics");
+		}
+	}
+
+	@Test
+	public void intrinsicsRenameDisabledTest() throws Exception {
+		Map<String, String> pluginOptions = new HashMap<>();
+		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".intrinsics_rename.enable", "false");
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
+			String code = getClassCode(decompiler, "ConstArgsSample");
+			assertThat(code).doesNotContain("class Intrinsics");
 		}
 	}
 
 	@Test
 	public void constArgLogMethodNameRuleEnabledTest() throws Exception {
 		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali")) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "ConstArgsSample");
 			assertThat(code).contains("void refreshData()")
-					.contains("void syncState()");
+					.contains("void syncState()")
+					.contains("void test(String");
 		}
 	}
 
@@ -106,20 +118,17 @@ class JadxAutoRenamePluginTest {
 		Map<String, String> pluginOptions = new HashMap<>();
 		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.log_method_name.enable", "false");
 		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "ConstArgsSample");
 			assertThat(code).doesNotContain("void refreshData()")
-					.doesNotContain("void syncState()");
+					.doesNotContain("void syncState()")
+					.doesNotContain("void test(String");
 		}
 	}
 
 	@Test
 	public void getterSetterRenameEnabledTest() throws Exception {
 		try (JadxDecompiler decompiler = createAndInitDecompiler("getter_setter.smali")) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("GetterSetterSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "GetterSetterSample");
 			assertThat(code).contains("useSet(Object title)");
 			assertThat(code).contains("useGetStatic(Object name)");
 			assertThat(code).contains("useSetStatic(Object obj, Object name)");
@@ -131,13 +140,17 @@ class JadxAutoRenamePluginTest {
 		Map<String, String> pluginOptions = new HashMap<>();
 		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".getter_setter_rename.enable", "false");
 		try (JadxDecompiler decompiler = createAndInitDecompiler("getter_setter.smali", pluginOptions)) {
-			JavaClass cls = decompiler.searchJavaClassByOrigFullName("GetterSetterSample");
-			assertThat(cls).isNotNull();
-			String code = cls.getCode();
+			String code = getClassCode(decompiler, "GetterSetterSample");
 			assertThat(code).doesNotContain("useSet(Object title)");
 			assertThat(code).doesNotContain("useGetStatic(Object name)");
 			assertThat(code).doesNotContain("useSetStatic(Object obj, Object name)");
 		}
+	}
+
+	private String getClassCode(JadxDecompiler decompiler, String origClassName) {
+		JavaClass cls = decompiler.searchJavaClassByOrigFullName(origClassName);
+		assertThat(cls).as("missing class: " + origClassName).isNotNull();
+		return cls.getCode();
 	}
 
 	private JadxDecompiler createAndInitDecompiler(String sampleFileName) throws Exception {
