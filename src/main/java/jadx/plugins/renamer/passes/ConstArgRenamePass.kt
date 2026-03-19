@@ -49,7 +49,9 @@ class ConstArgRenamePass(
 		enabledRules = RULES.filter(::isRuleEnabled)
 		if (ruleOptions.nullCheckRules) {
 			intrinsicsClassNames.addAll(findKotlinIntrinsicsClasses(root))
-			renameDetectedIntrinsicsClasses(root)
+			if (ruleOptions.kotlinIntrinsicsClassRename) {
+				renameDetectedIntrinsicsClasses(root)
+			}
 		}
 		requireFullInvokeScan = ruleOptions.obfuscatedNullCheckRules || intrinsicsClassNames.isNotEmpty()
 		for (rule in enabledRules) {
@@ -436,6 +438,7 @@ class ConstArgRenamePass(
 		val jsonRules: Boolean = true,
 		val logRules: Boolean = false,
 		val obfuscatedNullCheckRules: Boolean = true,
+		val kotlinIntrinsicsClassRename: Boolean = true,
 	)
 
 	companion object {

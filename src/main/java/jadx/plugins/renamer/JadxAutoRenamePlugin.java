@@ -46,7 +46,8 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 							options.isConstArgNullCheckRules(),
 							options.isConstArgJsonRules(),
 							options.isConstArgLogRules(),
-							options.isConstArgObfuscatedNullCheck())));
+							options.isConstArgObfuscatedNullCheck(),
+							options.isConstArgKotlinIntrinsicsClassRename())));
 		}
 	}
 }

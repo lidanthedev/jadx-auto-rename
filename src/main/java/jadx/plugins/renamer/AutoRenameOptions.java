@@ -13,6 +13,7 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean constArgJsonRules;
 	private boolean constArgLogRules;
 	private boolean constArgObfuscatedNullCheck;
+	private boolean constArgKotlinIntrinsicsClassRename;
 
 	@Override
 	public void registerOptions() {
@@ -52,6 +53,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable heuristic const-arg renaming for obfuscated null-check wrappers")
 				.defaultValue(true)
 				.setter(v -> constArgObfuscatedNullCheck = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.kotlin_intrinsics_class_rename.enable")
+				.description("Enable Kotlin Intrinsics class rename by marker string")
+				.defaultValue(true)
+				.setter(v -> constArgKotlinIntrinsicsClassRename = v);
 	}
 
 	public boolean isSourceFileRename() {
@@ -88,5 +93,9 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isConstArgObfuscatedNullCheck() {
 		return constArgObfuscatedNullCheck;
+	}
+
+	public boolean isConstArgKotlinIntrinsicsClassRename() {
+		return constArgKotlinIntrinsicsClassRename;
 	}
 }
