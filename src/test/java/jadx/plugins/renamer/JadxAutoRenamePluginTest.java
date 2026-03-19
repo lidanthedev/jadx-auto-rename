@@ -91,6 +91,30 @@ class JadxAutoRenamePluginTest {
 	}
 
 	@Test
+	public void constArgLogMethodNameRuleEnabledTest() throws Exception {
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali")) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).contains("void refreshData()")
+					.contains("void syncState()");
+		}
+	}
+
+	@Test
+	public void constArgLogMethodNameRuleDisabledTest() throws Exception {
+		Map<String, String> pluginOptions = new HashMap<>();
+		pluginOptions.put(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.log_method_name.enable", "false");
+		try (JadxDecompiler decompiler = createAndInitDecompiler("const_args.smali", pluginOptions)) {
+			JavaClass cls = decompiler.searchJavaClassByOrigFullName("ConstArgsSample");
+			assertThat(cls).isNotNull();
+			String code = cls.getCode();
+			assertThat(code).doesNotContain("void refreshData()")
+					.doesNotContain("void syncState()");
+		}
+	}
+
+	@Test
 	public void getterSetterRenameEnabledTest() throws Exception {
 		try (JadxDecompiler decompiler = createAndInitDecompiler("getter_setter.smali")) {
 			JavaClass cls = decompiler.searchJavaClassByOrigFullName("GetterSetterSample");

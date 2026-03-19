@@ -17,6 +17,7 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean constArgNullCheckRules;
 	private boolean constArgJsonRules;
 	private boolean constArgLogRules;
+	private boolean constArgLogMethodNameRules;
 	private boolean constArgObfuscatedNullCheck;
 	private boolean constArgKotlinIntrinsicsClassRename;
 
@@ -74,6 +75,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable const-arg rules for Log tag calls")
 				.defaultValue(false)
 				.setter(v -> constArgLogRules = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.log_method_name.enable")
+				.description("Enable const-arg method rename from Log messages like 'methodName: ...' or 'called methodName'")
+				.defaultValue(true)
+				.setter(v -> constArgLogMethodNameRules = v);
 		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.obfuscated_null_check.enable")
 				.description("Enable heuristic const-arg renaming for obfuscated null-check wrappers")
 				.defaultValue(true)
@@ -134,6 +139,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isConstArgLogRules() {
 		return constArgLogRules;
+	}
+
+	public boolean isConstArgLogMethodNameRules() {
+		return constArgLogMethodNameRules;
 	}
 
 	public boolean isConstArgObfuscatedNullCheck() {

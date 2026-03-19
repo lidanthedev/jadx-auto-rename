@@ -6,14 +6,15 @@ import jadx.api.plugins.pass.types.JadxDecompilePass
 import jadx.core.deobf.NameMapper
 import jadx.core.dex.attributes.AFlag
 import jadx.core.dex.attributes.nodes.RenameReasonAttr
-import jadx.core.dex.instructions.args.ArgType
-import jadx.core.dex.instructions.args.InsnArg
 import jadx.core.dex.info.MethodInfo
 import jadx.core.dex.instructions.InsnType
 import jadx.core.dex.instructions.InvokeNode
+import jadx.core.dex.instructions.args.ArgType
+import jadx.core.dex.instructions.args.InsnArg
 import jadx.core.dex.instructions.args.InsnWrapArg
 import jadx.core.dex.instructions.args.RegisterArg
 import jadx.core.dex.nodes.ClassNode
+import jadx.core.dex.nodes.InsnNode
 import jadx.core.dex.nodes.MethodNode
 import jadx.core.dex.nodes.RootNode
 import jadx.core.utils.InsnUtils
@@ -32,6 +33,7 @@ class ConstArgRenamePass(
 	private val intrinsicsClassNames = HashSet<String>()
 	private var enabledRules = emptyList<Rule>()
 	private var requireFullInvokeScan = false
+	private val logMethodCalls = setOf("d", "i", "w", "e", "v", "wtf", "println")
 
 	override fun getInfo(): JadxPassInfo {
 		return OrderedJadxPassInfo(
@@ -49,9 +51,7 @@ class ConstArgRenamePass(
 		enabledRules = RULES.filter(::isRuleEnabled)
 		if (ruleOptions.nullCheckRules && ruleOptions.kotlinIntrinsicsClassRename) {
 			intrinsicsClassNames.addAll(findKotlinIntrinsicsClasses(root))
-			if (ruleOptions.kotlinIntrinsicsClassRename) {
-				renameDetectedIntrinsicsClasses(root)
-			}
+			renameDetectedIntrinsicsClasses(root)
 		}
 		requireFullInvokeScan = ruleOptions.obfuscatedNullCheckRules || intrinsicsClassNames.isNotEmpty()
 		for (rule in enabledRules) {
@@ -82,6 +82,9 @@ class ConstArgRenamePass(
 				if (insn.type != InsnType.INVOKE || insn !is InvokeNode) {
 					continue
 				}
+				if (ruleOptions.logMethodNameRules) {
+					applyLogMethodNameRule(mth, insn)
+				}
 				for (rule in enabledRules) {
 					if (!matchesRule(insn.callMth, rule)) {
 						continue
@@ -96,6 +99,77 @@ class ConstArgRenamePass(
 				}
 			}
 		}
+	}
+
+	private fun applyLogMethodNameRule(callerMth: MethodNode, invoke: InvokeNode) {
+		if (!invoke.isStaticCall) {
+			return
+		}
+		if (invoke.callMth.declClass.fullName != "android.util.Log") {
+			return
+		}
+		if (!logMethodCalls.contains(invoke.callMth.name)) {
+			return
+		}
+		val msgArgIndex = if (invoke.callMth.name == "println") 2 else 1
+		if (invoke.argsCount <= msgArgIndex) {
+			return
+		}
+		val msg = extractLogMessage(invoke.getArg(msgArgIndex)) ?: return
+		val candidate = extractMethodNameFromLog(msg) ?: return
+		renameMethod(callerMth, candidate, "log.method_name")
+	}
+
+	private fun extractLogMessage(arg: InsnArg): String? {
+		val direct = InsnUtils.getConstValueByArg(root, arg) as? String
+		if (direct != null) {
+			return direct
+		}
+		if (arg is RegisterArg) {
+			return extractMessagePrefixFromInsn(arg.sVar?.assignInsn)
+		}
+		if (arg is InsnWrapArg) {
+			return extractMessagePrefixFromInsn(arg.wrapInsn)
+		}
+		return null
+	}
+
+	private fun extractMessagePrefixFromInsn(insn: InsnNode?): String? {
+		if (insn == null) {
+			return null
+		}
+		if ((insn.type == InsnType.MOVE || insn.type == InsnType.CHECK_CAST) && insn.argsCount >= 1) {
+			return extractLogMessage(insn.getArg(0))
+		}
+		if (insn.type == InsnType.STR_CONCAT) {
+			for (part in insn.argList) {
+				val str = InsnUtils.getConstValueByArg(root, part) as? String
+				if (!str.isNullOrBlank()) {
+					return str
+				}
+			}
+			return null
+		}
+		if (insn is InvokeNode
+			&& insn.callMth.declClass.fullName == "java.lang.String"
+			&& insn.callMth.name == "concat"
+			&& insn.argsCount >= 1
+		) {
+			// java.lang.String.concat keeps the left-hand string as method receiver at arg 0.
+			return extractLogMessage(insn.getArg(0))
+		}
+		return null
+	}
+
+	private fun extractMethodNameFromLog(msg: String): String? {
+		val trimmed = msg.trim()
+		if (trimmed.isEmpty()) {
+			return null
+		}
+		val match = LOG_METHOD_NAME_PATTERNS.firstNotNullOfOrNull { regex ->
+			regex.find(trimmed)?.groups?.get(1)?.value
+		} ?: return null
+		return normalizeName(match)
 	}
 
 	private fun applyIntrinsicsRule(invoke: InvokeNode) {
@@ -158,6 +232,10 @@ class ConstArgRenamePass(
 	}
 
 	private fun renameMethod(mth: MethodNode, newName: String, rule: Rule) {
+		renameMethod(mth, newName, rule.id)
+	}
+
+	private fun renameMethod(mth: MethodNode, newName: String, reasonId: String) {
 		if (!NameMapper.isValidIdentifier(newName) || mth.name == newName) {
 			return
 		}
@@ -171,9 +249,9 @@ class ConstArgRenamePass(
 		} catch (_: Exception) {
 			// ignore
 		}
-		logger.info("Rename method '$mth' to '$newName' by const arg rule ${rule.id}")
+		logger.info("Rename method '$mth' to '$newName' by const arg rule $reasonId")
 		mth.rename(newName)
-		RenameReasonAttr.forNode(mth).append("from ConstArgRenamePass: ${rule.id}")
+		RenameReasonAttr.forNode(mth).append("from ConstArgRenamePass: $reasonId")
 	}
 
 	private fun renameAssignee(invoke: InvokeNode, newName: String) {
@@ -437,12 +515,18 @@ class ConstArgRenamePass(
 		val nullCheckRules: Boolean = true,
 		val jsonRules: Boolean = true,
 		val logRules: Boolean = false,
+		val logMethodNameRules: Boolean = true,
 		val obfuscatedNullCheckRules: Boolean = true,
 		val kotlinIntrinsicsClassRename: Boolean = true,
 	)
 
 	companion object {
 		private val IDENTIFIER_REGEX = Regex("[A-Za-z_][A-Za-z0-9_]*")
+		private val LOG_METHOD_NAME_PATTERNS = listOf(
+			Regex("^([A-Za-z_][A-Za-z0-9_]*)\\s*[:\\-].*$"),
+			Regex("^([A-Za-z_][A-Za-z0-9_]*)\\s+called\\b.*$", RegexOption.IGNORE_CASE),
+			Regex("^called\\s+([A-Za-z_][A-Za-z0-9_]*)\\b.*$", RegexOption.IGNORE_CASE),
+		)
 		private const val INTRINSICS_MARKER_UPDATE_RUNTIME = "Please update the Kotlin runtime to the latest version"
 		private const val INTRINSICS_MARKER_REQUIRED_VERSION = "this code requires the Kotlin runtime of version at least"
 

@@ -4,12 +4,12 @@ import jadx.api.plugins.JadxPlugin;
 import jadx.api.plugins.JadxPluginContext;
 import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.JadxPluginInfoBuilder;
-import jadx.plugins.renamer.passes.LogRenamePass;
 import jadx.plugins.renamer.passes.ConstArgRenamePass;
 import jadx.plugins.renamer.passes.GetterSetterMethodRenamePass;
 import jadx.plugins.renamer.passes.GetterSetterRenamePass;
 import jadx.plugins.renamer.passes.IntrinsicsRenamePass;
 import jadx.plugins.renamer.passes.KotlinMetadataCommentPass;
+import jadx.plugins.renamer.passes.LogRenamePass;
 import jadx.plugins.renamer.passes.SourceFileRenamePass;
 import jadx.plugins.renamer.passes.TagRenamePass;
 import jadx.plugins.renamer.passes.ToStringRenamePass;
@@ -57,6 +57,7 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 							options.isConstArgNullCheckRules(),
 							options.isConstArgJsonRules(),
 							options.isConstArgLogRules(),
+							options.isConstArgLogMethodNameRules(),
 							options.isConstArgObfuscatedNullCheck(),
 							options.isConstArgKotlinIntrinsicsClassRename())));
 		}

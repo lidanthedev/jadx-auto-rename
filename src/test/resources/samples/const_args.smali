@@ -67,4 +67,20 @@
     return-void
 .end method
 
+.method public static g()V
+    .registers 2
+    const-string v0, "TAG"
+    const-string v1, "refreshData: started"
+    invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    return-void
+.end method
+
+.method public static h()V
+    .registers 2
+    const-string v0, "TAG"
+    const-string v1, "called syncState"
+    invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    return-void
+.end method
+
 
