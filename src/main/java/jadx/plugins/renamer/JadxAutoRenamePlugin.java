@@ -6,6 +6,7 @@ import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.JadxPluginInfoBuilder;
 import jadx.plugins.renamer.passes.LogRenamePass;
 import jadx.plugins.renamer.passes.ConstArgRenamePass;
+import jadx.plugins.renamer.passes.GetterSetterMethodRenamePass;
 import jadx.plugins.renamer.passes.GetterSetterRenamePass;
 import jadx.plugins.renamer.passes.IntrinsicsRenamePass;
 import jadx.plugins.renamer.passes.KotlinMetadataCommentPass;
@@ -61,6 +62,9 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 		}
 		if (options.isGetterSetterRename()) {
 			context.addPass(new GetterSetterRenamePass());
+		}
+		if (options.isGetterSetterMethodRename()) {
+			context.addPass(new GetterSetterMethodRenamePass());
 		}
 	}
 }

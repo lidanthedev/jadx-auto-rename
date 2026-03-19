@@ -13,6 +13,7 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 	private boolean kotlinMetadataComment;
 	private boolean constArgRename;
 	private boolean getterSetterRename;
+	private boolean getterSetterMethodRename;
 	private boolean constArgNullCheckRules;
 	private boolean constArgJsonRules;
 	private boolean constArgLogRules;
@@ -57,6 +58,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 				.description("Enable Auto Rename by getX()/setY() method patterns")
 				.defaultValue(true)
 				.setter(v -> getterSetterRename = v);
+		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".getter_setter_method_rename.enable")
+				.description("Enable Auto Rename of getter/setter methods based on renamed fields")
+				.defaultValue(true)
+				.setter(v -> getterSetterMethodRename = v);
 		boolOption(JadxAutoRenamePlugin.PLUGIN_ID + ".const_arg_rename.rule.null_check.enable")
 				.description("Enable const-arg rules for null-check methods")
 				.defaultValue(true)
@@ -113,6 +118,10 @@ public class AutoRenameOptions extends BasePluginOptionsBuilder {
 
 	public boolean isGetterSetterRename() {
 		return getterSetterRename;
+	}
+
+	public boolean isGetterSetterMethodRename() {
+		return getterSetterMethodRename;
 	}
 
 	public boolean isConstArgNullCheckRules() {
