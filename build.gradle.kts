@@ -26,6 +26,8 @@ dependencies {
         isChanging = isJadxSnapshot
     }
 
+	implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
+
 	testImplementation("io.github.skylot:jadx-smali-input:$jadxVersion") {
         isChanging = isJadxSnapshot
     }
@@ -53,9 +55,15 @@ tasks {
     withType(Test::class) {
         useJUnitPlatform()
     }
+    named<Jar>("jar") {
+		archiveClassifier.set("plain")
+	}
     val shadowJar = withType(ShadowJar::class) {
         archiveClassifier.set("") // remove '-all' suffix
     }
+    named("assemble") {
+		dependsOn(shadowJar)
+	}
 
     // copy result jar into "build/dist" directory
     register<Copy>("dist") {

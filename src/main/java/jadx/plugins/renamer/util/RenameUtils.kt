@@ -4,6 +4,7 @@ import jadx.api.data.ICodeData
 import jadx.api.data.IJavaNodeRef
 import jadx.core.dex.nodes.ClassNode
 import jadx.core.dex.nodes.FieldNode
+import jadx.core.dex.nodes.MethodNode
 
 class RenameUtils {
 	companion object {
@@ -36,6 +37,24 @@ class RenameUtils {
 					val nodeRef = r.nodeRef
 					nodeRef.type == IJavaNodeRef.RefType.CLASS &&
 						nodeRef.declaringClass == clsRaw
+				}
+			} catch (_: Exception) {
+				return false
+			}
+		}
+
+		@JvmStatic
+		fun isMethodUserRenamed(mth: MethodNode): Boolean {
+			try {
+				val root = mth.root()
+				val codeData: ICodeData = root.args.codeData ?: return false
+				val clsRaw = mth.parentClass.classInfo.rawName
+				val shortId = mth.methodInfo.shortId
+				return codeData.renames.any { r ->
+					val nodeRef = r.nodeRef
+					nodeRef.type == IJavaNodeRef.RefType.METHOD
+						&& nodeRef.declaringClass == clsRaw
+						&& nodeRef.shortId == shortId
 				}
 			} catch (_: Exception) {
 				return false

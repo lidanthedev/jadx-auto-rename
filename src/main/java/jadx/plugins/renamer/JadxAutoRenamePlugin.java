@@ -4,6 +4,11 @@ import jadx.api.plugins.JadxPlugin;
 import jadx.api.plugins.JadxPluginContext;
 import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.JadxPluginInfoBuilder;
+import jadx.plugins.renamer.passes.ConstArgRenamePass;
+import jadx.plugins.renamer.passes.GetterSetterMethodRenamePass;
+import jadx.plugins.renamer.passes.GetterSetterRenamePass;
+import jadx.plugins.renamer.passes.IntrinsicsRenamePass;
+import jadx.plugins.renamer.passes.KotlinMetadataCommentPass;
 import jadx.plugins.renamer.passes.LogRenamePass;
 import jadx.plugins.renamer.passes.SourceFileRenamePass;
 import jadx.plugins.renamer.passes.TagRenamePass;
@@ -38,6 +43,29 @@ public class JadxAutoRenamePlugin implements JadxPlugin {
 		}
 		if (options.isLogRename()) {
 			context.addPass(new LogRenamePass());
+		}
+		if (options.isIntrinsicsRename()) {
+			context.addPass(new IntrinsicsRenamePass(new IntrinsicsRenamePass.Options(
+					options.isIntrinsicsClassRename())));
+		}
+		if (options.isKotlinMetadataComment()) {
+			context.addPass(new KotlinMetadataCommentPass());
+		}
+		if (options.isConstArgRename()) {
+			context.addPass(new ConstArgRenamePass(
+					new ConstArgRenamePass.RuleOptions(
+							options.isConstArgNullCheckRules(),
+							options.isConstArgJsonRules(),
+							options.isConstArgLogRules(),
+							options.isConstArgLogMethodNameRules(),
+							options.isConstArgObfuscatedNullCheck(),
+							options.isConstArgKotlinIntrinsicsClassRename())));
+		}
+		if (options.isGetterSetterRename()) {
+			context.addPass(new GetterSetterRenamePass());
+		}
+		if (options.isGetterSetterMethodRename()) {
+			context.addPass(new GetterSetterMethodRenamePass());
 		}
 	}
 }
